@@ -1,0 +1,15 @@
+auth-service/
+├── config/
+│   └── db.js                 # Conexión a MongoDB
+├── controllers/
+│   └── authController.js     # Lógica para el registro y login
+├── middlewares/
+│   └── validateToken.js      # Middleware para validar JWT
+├── models/
+│   └── userModel.js          # Estructura de usuario
+├── routes/
+│   └── authRoutes.js         # Rutas de autenticación
+├── utils/
+│   └── generateToken.js      # Utilidad para generar JWT
+├── index.js                  # Servidor principal del microservicio
+└── package.json              # Dependencias del Auth Service

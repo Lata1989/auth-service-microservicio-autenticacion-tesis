@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js'; // Actualizado para ES Modules
-import { connectDB } from './utils/connectDB.js'; // Importa la función de conexión
+import { connectDB } from './config/db.js'; // Importa la función de conexión
 
 dotenv.config();
 

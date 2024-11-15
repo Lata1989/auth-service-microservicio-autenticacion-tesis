@@ -1,19 +1,31 @@
-import {userModel} from '../models/userModel.js';
+import { MongoClient } from 'mongodb';
 import { generateToken } from '../utils/generateToken.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const client = new MongoClient(process.env.MONGO_URI);
+
+// Función para obtener la colección de usuarios
+const getUserCollection = async () => {
+    const db = await client.connect();
+    return db.db(process.env.DB_NAME).collection('users');
+};
 
 // Registro de usuario
 export const registerUser = async (req, res) => {
-    try {
-        const { nombre, apellido, email, password, dni, cuit, direccion, localidad } = req.body;
-        const collection = await userModel();
+    const { nombre, apellido, email, password, dni, cuit, direccion, localidad } = req.body;
 
+    try {
         // Verificar si el usuario ya existe
+        const collection = await getUserCollection();
         const userExist = await collection.findOne({ email });
+
         if (userExist) {
             return res.status(400).json({ message: 'Usuario ya existe' });
         }
 
-        // Crear un nuevo usuario
+        // Crear el nuevo usuario con los datos proporcionados
         const newUser = {
             nombre,
             apellido,
@@ -25,12 +37,11 @@ export const registerUser = async (req, res) => {
             localidad,
         };
 
+        // Insertar el usuario en la base de datos
         await collection.insertOne(newUser);
 
-        // Generar JWT
-        const token = generateToken(newUser._id);
-
-        res.status(201).json({ message: 'Usuario registrado con éxito', token });
+        // Responder con éxito
+        res.status(201).json({ message: 'Usuario registrado con éxito' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error en el servidor' });
@@ -39,24 +50,25 @@ export const registerUser = async (req, res) => {
 
 // Login de usuario
 export const loginUser = async (req, res) => {
+    const { email, password } = req.body;
+
     try {
-        const { email, password } = req.body;
-        const collection = await userModel();
-
-        // Buscar usuario
+        const collection = await getUserCollection();
         const user = await collection.findOne({ email });
+
         if (!user) {
-            return res.status(400).json({ message: 'Usuario no encontrado' });
+            return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Validar la contraseña (aquí solo se valida que exista)
+        // Verificar la contraseña
         if (user.password !== password) {
-            return res.status(400).json({ message: 'Contraseña incorrecta' });
+            return res.status(401).json({ message: 'Credenciales incorrectas' });
         }
 
-        // Generar token
-        const token = generateToken(user._id);
+        // Generar el token de autenticación
+        const token = generateToken(user._id, user.email);
 
+        // Responder con el token
         res.json({ message: 'Login exitoso', token });
     } catch (error) {
         console.error(error);
@@ -64,16 +76,19 @@ export const loginUser = async (req, res) => {
     }
 };
 
-// Perfil de usuario (ruta protegida)
+// Obtener perfil de usuario
 export const getUserProfile = async (req, res) => {
     try {
-        const collection = await userModel();
-        const user = await collection.findOne({ _id: req.userId });
+        const { email } = req.user; // El email viene del objeto decodificado del token
+
+        const collection = await getUserCollection();
+        const user = await collection.findOne({ email });
 
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
+        // Responder con los datos del usuario
         res.json({
             nombre: user.nombre,
             apellido: user.apellido,
@@ -81,7 +96,7 @@ export const getUserProfile = async (req, res) => {
             dni: user.dni,
             cuit: user.cuit,
             direccion: user.direccion,
-            localidad: user.localidad,
+            localidad: user.localidad
         });
     } catch (error) {
         console.error(error);

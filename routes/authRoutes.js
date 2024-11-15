@@ -1,14 +1,16 @@
 import express from 'express';
 import { registerUser, loginUser, getUserProfile } from '../controllers/authController.js';
-import { validateToken } from '../middlewares/validateToken.js'; // Importamos el middleware
+import { validateToken } from '../middlewares/validateToken.js';
 
 const router = express.Router();
 
-// Rutas de autenticación publicas
+// Ruta pública para registrar un usuario
 router.post('/register', registerUser);
+
+// Ruta pública para el login de un usuario
 router.post('/login', loginUser);
 
-// Ruta protegida para obtener el perfil del usuario
+// Ruta protegida para obtener el perfil de un usuario (requiere autenticación)
 router.get('/profile', validateToken, getUserProfile);
 
 export default router;

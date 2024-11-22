@@ -91,7 +91,6 @@ export const getUserProfile = async (req, res) => {
         const user = await collection.findOne({ email });
 
         if (!user) {
-            console.log("d");
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 

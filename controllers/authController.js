@@ -14,7 +14,7 @@ const getUserCollection = async () => {
 
 // Registro de usuario
 export const registerUser = async (req, res) => {
-    const { nombre, apellido, email, password, dni, cuit, direccion, localidad } = req.body;
+    const { nombre, apellido, email, password, dni, cuit, direccion, localidad, rol } = req.body;
 
     try {
         // Verificar si el usuario ya existe
@@ -35,6 +35,7 @@ export const registerUser = async (req, res) => {
             cuit,
             direccion,
             localidad,
+            rol
         };
 
         // Insertar el usuario en la base de datos
@@ -50,7 +51,7 @@ export const registerUser = async (req, res) => {
 
 // Login de usuario
 export const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, rol } = req.body; // Incluimos el rol en el body
 
     try {
         const collection = await getUserCollection();
@@ -63,6 +64,11 @@ export const loginUser = async (req, res) => {
         // Verificar la contraseña
         if (user.password !== password) {
             return res.status(401).json({ message: 'Credenciales incorrectas' });
+        }
+
+        // Verificar el rol
+        if (user.rol !== rol) {
+            return res.status(403).json({ message: 'Rol no autorizado' });
         }
 
         // Generar el token de autenticación

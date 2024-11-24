@@ -16,6 +16,11 @@ const getUserCollection = async () => {
 export const registerUser = async (req, res) => {
     const { nombre, apellido, email, password, dni, cuit, direccion, localidad, rol } = req.body;
 
+    // Validación de campos vacíos
+    if (!nombre || !apellido || !email || !password || !dni || !cuit || !direccion || !localidad || !rol) {
+        return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+    }
+
     try {
         // Verificar si el usuario ya existe
         const collection = await getUserCollection();

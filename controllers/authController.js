@@ -16,13 +16,11 @@ const getUserCollection = async () => {
 export const registerUser = async (req, res) => {
     const { nombre, apellido, email, password, dni, cuit, direccion, localidad, rol } = req.body;
 
-    // Validación de campos vacíos
     if (!nombre || !apellido || !email || !password || !dni || !cuit || !direccion || !localidad || !rol) {
         return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
 
     try {
-        // Verificar si el usuario ya existe
         const collection = await getUserCollection();
         const userExist = await collection.findOne({ email });
 
@@ -30,23 +28,10 @@ export const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Usuario ya existe' });
         }
 
-        // Crear el nuevo usuario con los datos proporcionados
-        const newUser = {
-            nombre,
-            apellido,
-            email,
-            password, // Al no usar bcrypt, almacenamos la contraseña tal cual (no recomendado)
-            dni,
-            cuit,
-            direccion,
-            localidad,
-            rol
-        };
+        const newUser = { nombre, apellido, email, password, dni, cuit, direccion, localidad, rol };
 
-        // Insertar el usuario en la base de datos
         await collection.insertOne(newUser);
 
-        // Responder con éxito
         res.status(201).json({ message: 'Usuario registrado con éxito' });
     } catch (error) {
         console.error(error);
@@ -56,31 +41,19 @@ export const registerUser = async (req, res) => {
 
 // Login de usuario
 export const loginUser = async (req, res) => {
-    const { email, password, rol } = req.body; // Incluimos el rol en el body
+    const { email, password, rol } = req.body;
 
     try {
         const collection = await getUserCollection();
         const user = await collection.findOne({ email });
 
-        if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-
-        // Verificar la contraseña
-        if (user.password !== password) {
+        if (!user || user.password !== password || user.rol !== rol) {
             return res.status(401).json({ message: 'Credenciales incorrectas' });
         }
 
-        // Verificar el rol
-        if (user.rol !== rol) {
-            return res.status(403).json({ message: 'Rol no autorizado' });
-        }
-
-        // Generar el token de autenticación
         const token = generateToken(user._id, user.email);
 
-        // Responder con el token
-        res.json({ message: 'Login exitoso', token });
+        res.json({ message: 'Login exitoso', token, user });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error en el servidor' });
@@ -90,7 +63,7 @@ export const loginUser = async (req, res) => {
 // Obtener perfil de usuario
 export const getUserProfile = async (req, res) => {
     try {
-        const { email } = req.user; // El email viene del objeto decodificado del token
+        const { email } = req.user;
 
         const collection = await getUserCollection();
         const user = await collection.findOne({ email });
@@ -99,7 +72,6 @@ export const getUserProfile = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Responder con los datos del usuario
         res.json({
             nombre: user.nombre,
             apellido: user.apellido,
@@ -107,10 +79,11 @@ export const getUserProfile = async (req, res) => {
             dni: user.dni,
             cuit: user.cuit,
             direccion: user.direccion,
-            localidad: user.localidad
+            localidad: user.localidad,
+            rol: user.rol
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error en el servidor' });
+        res.status(500).json({ message: 'Error al obtener perfil' });
     }
 };
